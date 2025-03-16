@@ -10,7 +10,11 @@ from ultralytics.utils.plotting import Annotator, colors
 from models.common import DetectMultiBackend
 from utils.general import check_img_size, scale_boxes, non_max_suppression
 from utils.torch_utils import select_device, smart_inference_mode
-
+from router.user_router import router as user_router
+from model.violation_model import ParkingViolation 
+from router.violation_router import router as violation_router
+from database import Base, engine
+Base.metadata.create_all(bind=engine)
 # ============== BEGIN YOLO DETECTION CODE ==============
 reader = easyocr.Reader(['en'], gpu=False)
 
@@ -129,6 +133,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(user_router, prefix="/users", tags=["users"])
+app.include_router(violation_router, prefix="/violations", tags=["violations"])
 # Load the YOLO model once at startup
 model_data = load_model(weights_path="weights/best.pt", device="cpu")
 
