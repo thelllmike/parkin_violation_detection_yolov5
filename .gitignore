@@ -1,0 +1,65 @@
+# -------------------------
+#  Python
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# -------------------------
+#  Virtual Environments
+# -------------------------
+venv/
+.venv/
+parking_violation_env/
+env/
+*.venv
+
+# -------------------------
+#  Jupyter Notebooks
+# -------------------------
+.ipynb_checkpoints/
+
+# -------------------------
+#  macOS
+# -------------------------
+.DS_Store
+
+# -------------------------
+#  YOLOv5 (Optional)
+# -------------------------
+# Ignore YOLOv5 'runs' folder where local experiment outputs go
+runs/
+
+# If you do NOT want to version-control your large weights, uncomment below:
+# weights/
+# Or selectively ignore large .pt files:
+# *.pt
+
+# -------------------------
+#  Logs, Temp Files
+# -------------------------
+*.log
+*.tmp
+*.temp
+*.out
+*.pid
+
+# -------------------------
+#  Environment & Secrets
+# -------------------------
+.env
+*.env
+
+# -------------------------
+#  Video Files
+# -------------------------
+*.mp4
+*.avi
+*.mov
+*.mkv
