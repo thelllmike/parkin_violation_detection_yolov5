@@ -6,6 +6,7 @@ class ViolationBase(BaseModel):
     license_plate: str
     fine_amount: float
     description: Optional[str] = None
+    user_id: int  # Added user_id field
 
 class ViolationCreate(ViolationBase):
     pass

@@ -6,6 +6,7 @@ class ParkingViolation(Base):
     __tablename__ = "parking_violations"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)  # Added user ID
     license_plate = Column(String(255), index=True, nullable=False)
     violation_time = Column(DateTime, default=datetime.datetime.utcnow)
     fine_amount = Column(Float, nullable=False)
