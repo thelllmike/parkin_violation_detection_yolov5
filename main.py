@@ -114,51 +114,49 @@ def detect_frame(frame, model_data, conf_thres=0.25, iou_thres=0.45, line_ratio=
     return annotator.result(), recognized_plates, plate_violations
 
 def video_feed_generator(video_path="video/IMG_6358.MOV"):
-    """
-    Generator that opens a local video file, annotates each frame, and yields it as JPEG (MJPEG).
-    Immediately inserts a violation record into the DB if a violation is detected.
-    """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise Exception(f"Could not open video: {video_path}")
     
+    processed_plates = set()  # Track already-inserted plates
+
     while True:
         success, frame = cap.read()
         if not success:
             break
-        
-        # Rotate frame if needed
+
         frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-        
+
         annotated_frame, recognized_plates, plate_violations = detect_frame(frame, model_data)
-        
-        # Immediately process violations and send to DB
+
         for plate in plate_violations:
-            print(f"[ALERT] Violation detected for plate: {plate}")
-            try:
-                with SessionLocal() as db:
-                    violation_data = {
-                        "license_plate": plate,
-                        "fine_amount": 100.0,
-                        "description": "Violation detected on boundary",
-                        "user_id": 1
-                    }
-                    violation_instance = ViolationCreate(**violation_data)
-                    create_violation(db, violation_instance)
-                    print(f"[INFO] Violation record inserted for plate: {plate}")
-            except Exception as ex:
-                print(f"[ERROR] Failed to insert violation record for plate {plate}: {ex}")
-        
+            if plate not in processed_plates:
+                print(f"[ALERT] New violation detected for plate: {plate}")
+                try:
+                    with SessionLocal() as db:
+                        violation_data = {
+                            "license_plate": plate,
+                            "fine_amount": 100.0,
+                            "description": "Violation detected on boundary",
+                            "user_id": 1
+                        }
+                        violation_instance = ViolationCreate(**violation_data)
+                        create_violation(db, violation_instance)
+                        processed_plates.add(plate)  # Mark as processed
+                        print(f"[INFO] Violation record inserted for plate: {plate}")
+                except Exception as ex:
+                    print(f"[ERROR] Failed to insert violation record for plate {plate}: {ex}")
+
         ret, buffer = cv2.imencode('.jpg', annotated_frame)
         if not ret:
             break
-        
+
         frame_bytes = buffer.tobytes()
         yield (
             b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n'
         )
-    
+
     cap.release()
 
 @app.get("/video_feed")
