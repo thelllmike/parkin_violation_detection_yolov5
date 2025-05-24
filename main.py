@@ -1,23 +1,27 @@
 import os
 import cv2
+from schemas.user_schemas import UserAppCreate, UserAppOut
 import torch
 import numpy as np
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI , Depends   
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-
+from router.user_router import router as user_router
 from ultralytics.utils.plotting import Annotator, colors
 from models.common import DetectMultiBackend
 from utils.general import check_img_size, scale_boxes, non_max_suppression
 from utils.torch_utils import select_device, smart_inference_mode
-
-from database import Base, engine, SessionLocal
+import model.user_model   # ensures SQLAlchemy sees the User class
+import model.cards_model
+from database import Base, engine, SessionLocal, get_db
 from crud.violation_crud import create_violation
 from schemas.violation_schema import ViolationCreate
 from router.user_router import router as user_router
 from router.violation_router import router as violation_router
+from router.payment_router import router as payment_router
+from router.user_app_router import router as user_app_router
 
 import uvicorn
 from web3 import Web3
@@ -53,6 +57,7 @@ contract = w3.eth.contract(
 )
 # ────────────────────────────────────────────────────────────────────────────────
 
+
 # Create all tables
 Base.metadata.create_all(bind=engine)
 
@@ -67,7 +72,8 @@ app.add_middleware(
 
 app.include_router(user_router, prefix="/users", tags=["users"])
 app.include_router(violation_router, prefix="/violations", tags=["violations"])
-
+app.include_router(payment_router, prefix="/payments", tags=["payments"], dependencies=[Depends(get_db)])
+app.include_router(user_app_router, prefix="/user_app", tags=["user_app"])
 
 def load_model(weights_path="weights/best.pt", device=""):
     device = select_device(device)
@@ -189,6 +195,9 @@ def video_feed():
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
 
-
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
+# Aliases for backwards compatibility
+UserCreate = UserAppCreate
+UserOut = UserAppOut

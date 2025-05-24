@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from crud.user_crud import create_user, get_user_by_email, pwd_context
 from schemas.user_schema import UserCreate, UserOut
 from database import get_db, engine
-from model.user_model import Base
+from model.users_model import Base
 
 # Create the database tables if they don't exist
 Base.metadata.create_all(bind=engine)

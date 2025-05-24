@@ -4,3 +4,4 @@ torch
 opencv-python
 numpy
 PyYAML
+cryptography
