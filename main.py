@@ -5,7 +5,7 @@ import torch
 import numpy as np
 
 from dotenv import load_dotenv
-from fastapi import FastAPI , Depends   
+from fastapi import FastAPI, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from router.user_router import router as user_router
@@ -13,7 +13,7 @@ from ultralytics.utils.plotting import Annotator, colors
 from models.common import DetectMultiBackend
 from utils.general import check_img_size, scale_boxes, non_max_suppression
 from utils.torch_utils import select_device, smart_inference_mode
-import model.user_model   # ensures SQLAlchemy sees the User class
+import model.user_model  # ensures SQLAlchemy sees the User class
 import model.cards_model
 from database import Base, engine, SessionLocal, get_db
 from crud.violation_crud import create_violation
@@ -28,10 +28,10 @@ from web3 import Web3
 
 # ─── Load environment ───────────────────────────────────────────────────────────
 load_dotenv()
-API_URL       = os.getenv("API_URL")
-PRIVATE_KEY   = os.getenv("PRIVATE_KEY")
+API_URL = os.getenv("API_URL")
+PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 CONTRACT_ADDR = os.getenv("CONTRACT_ADDRESS")
-OWNER_ADDR    = "0xcb25302EC65227698BE614CD22DF3219e1e85F1B"
+OWNER_ADDR = "0xcb25302EC65227698BE614CD22DF3219e1e85F1B"
 
 if not all([API_URL, PRIVATE_KEY, CONTRACT_ADDR]):
     raise RuntimeError("Set API_URL, PRIVATE_KEY and CONTRACT_ADDRESS in .env")
@@ -42,9 +42,9 @@ OWNER_ADDRESS = w3.to_checksum_address(OWNER_ADDR)
 
 contract_abi = [{
     "inputs": [
-        {"internalType":"address","name":"_user","type":"address"},
-        {"internalType":"string","name":"_vehicleNumber","type":"string"},
-        {"internalType":"uint256","name":"_violationFee","type":"uint256"}
+        {"internalType": "address", "name": "_user", "type": "address"},
+        {"internalType": "string", "name": "_vehicleNumber", "type": "string"},
+        {"internalType": "uint256", "name": "_violationFee", "type": "uint256"}
     ],
     "name": "addViolationFee",
     "outputs": [],
@@ -55,8 +55,8 @@ contract = w3.eth.contract(
     address=w3.to_checksum_address(CONTRACT_ADDR),
     abi=contract_abi
 )
-# ────────────────────────────────────────────────────────────────────────────────
 
+# ────────────────────────────────────────────────────────────────────────────────
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
@@ -156,8 +156,12 @@ def video_feed_generator(video_path="video/IMG_6358.MOV"):
             except Exception as e:
                 print(f"[DB ERROR] {e}")
 
-            # 2) Send on-chain tx
+            # 2) Blockchain transaction with balance check
             try:
+                balance = w3.eth.get_balance(OWNER_ADDRESS)
+                balance_eth = w3.from_wei(balance, "ether")
+                print(f"[CHAIN] Balance of {OWNER_ADDRESS}: {balance_eth} ETH")
+
                 tx = contract.functions.addViolationFee(
                     OWNER_ADDRESS,
                     plate,
@@ -168,6 +172,13 @@ def video_feed_generator(video_path="video/IMG_6358.MOV"):
                     "gas": 200_000,
                     "gasPrice": w3.to_wei("20", "gwei")
                 })
+
+                # Check if balance is enough for gas
+                estimated_fee = tx["gas"] * tx["gasPrice"]
+                if balance < estimated_fee:
+                    print("[CHAIN ERROR] Insufficient balance to cover gas fees. Please fund the wallet.")
+                    continue
+
                 signed = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
                 tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
                 print(f"[CHAIN] addViolationFee → {tx_hash.hex()}")

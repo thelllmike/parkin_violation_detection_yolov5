@@ -30,7 +30,8 @@ class PaymentOut(BaseModel):
     user_id: int
     vehicle_number: str
     amount: float
-    paid_with: Literal["CARD","POINTS"]
+    paid_with: str   # instead of Literal
     created_at: datetime
+
     class Config:
         orm_mode = True
