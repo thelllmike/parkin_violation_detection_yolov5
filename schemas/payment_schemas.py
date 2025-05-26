@@ -24,6 +24,7 @@ class PaymentIn(BaseModel):
     vehicle_number: str
     amount: Optional[float] = None
     card_id: Optional[int] = None
+    
 
 class PaymentOut(BaseModel):
     id: int
